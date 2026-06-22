@@ -99,8 +99,8 @@ func (p *Plugin) serializedCommand(cur, next WeatherDescription) string {
 	if p.params.UseV2 {
 		return csp.SerializeWeatherV2(
 			uint64(date.Unix()),
-			byte(cur.Type),
-			byte(next.Type),
+			byte(cur.Type-1),
+			byte(next.Type-1),
 			uint16(65535*tr),
 			p.broadcastPeriod.Seconds(),
 			ambient,
@@ -115,7 +115,7 @@ func (p *Plugin) serializedCommand(cur, next WeatherDescription) string {
 		)
 	}
 
-	return csp.SerializeWeatherV1(uint64(date.Unix()), byte(cur.Type), byte(next.Type), float32(tr), float32(p.broadcastPeriod.Seconds()))
+	return csp.SerializeWeatherV1(uint64(date.Unix()), byte(cur.Type-1), byte(next.Type-1), float32(tr), float32(p.broadcastPeriod.Seconds()))
 }
 
 func (p *Plugin) broadcastLoop() {

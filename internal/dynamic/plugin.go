@@ -201,7 +201,7 @@ func (p *Plugin) syncWeatherByForecast() {
 				cache = entries
 				cacheExpiry = time.Now().Add(time.Hour)
 			} else {
-				fmt.Println("OpenWeather forecast warning:", err)
+				fmt.Println("OpenWeather forecast warning:", err, "— falling back to random weather")
 			}
 		}
 		if cache != nil {
@@ -215,6 +215,12 @@ func (p *Plugin) syncWeatherByForecast() {
 				}
 			}
 			p.applyWeather(best.WeatherDescription)
+		} else {
+			current := WeatherNone
+			if p.weatherNext != nil {
+				current = p.weatherNext.Type
+			}
+			p.applyWeather(generateRandomDescription(current, p.params))
 		}
 		select {
 		case <-p.disposed:
@@ -265,7 +271,12 @@ func (p *Plugin) syncWeather() {
 				if w, err := getOpenWeather(p.params.ApiKey, p.params.TrackLatitude, p.params.TrackLongitude); err == nil {
 					p.applyWeather(w)
 				} else {
-					fmt.Println("OpenWeather warning:", err)
+					fmt.Println("OpenWeather warning:", err, "— falling back to random weather")
+					current := WeatherNone
+					if p.weatherNext != nil {
+						current = p.weatherNext.Type
+					}
+					p.applyWeather(generateRandomDescription(current, p.params))
 				}
 				time.Sleep(p.updatePeriod)
 			}

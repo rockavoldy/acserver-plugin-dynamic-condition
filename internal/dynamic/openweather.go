@@ -55,6 +55,75 @@ func getOpenWeather(apiKey string, lat, lon float64) (WeatherDescription, error)
 	weatherType := mapType(num)
 	return WeatherDescription{Type: weatherType, Temperature: temp, WindSpeed: wind, WindDirection: dir, Humidity: hum, Pressure: press}, nil
 }
+type forecastResponse struct {
+	Times []forecastTime `xml:"forecast>time"`
+}
+
+type forecastTime struct {
+	From        string `xml:"from,attr"`
+	Temperature struct {
+		Value string `xml:"value,attr"`
+	} `xml:"temperature"`
+	Weather struct {
+		Number string `xml:"number,attr"`
+	} `xml:"weather"`
+	Wind struct {
+		Speed     struct{ Value string `xml:"value,attr"` } `xml:"speed"`
+		Direction struct{ Value string `xml:"value,attr"` } `xml:"direction"`
+	} `xml:"wind"`
+	Humidity struct {
+		Value string `xml:"value,attr"`
+	} `xml:"humidity"`
+	Pressure struct {
+		Value string `xml:"value,attr"`
+	} `xml:"pressure"`
+}
+
+type ForecastPoint struct {
+	At time.Time
+	WeatherDescription
+}
+
+func getOpenWeatherForecast(apiKey string, lat, lon float64) ([]ForecastPoint, error) {
+	url := fmt.Sprintf("http://api.openweathermap.org/data/2.5/forecast?lat=%v&lon=%v&APPID=%s&mode=xml&units=metric", lat, lon, apiKey)
+	client := http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("OpenWeather status %s", resp.Status)
+	}
+	var fr forecastResponse
+	if err := xml.NewDecoder(resp.Body).Decode(&fr); err != nil {
+		return nil, err
+	}
+	points := make([]ForecastPoint, 0, len(fr.Times))
+	for _, t := range fr.Times {
+		ts, err := time.Parse("2006-01-02T15:04:05", t.From)
+		if err != nil {
+			continue
+		}
+		num, _ := strconv.Atoi(t.Weather.Number)
+		points = append(points, ForecastPoint{
+			At: ts,
+			WeatherDescription: WeatherDescription{
+				Type:          mapType(num),
+				Temperature:   parse(t.Temperature.Value, 25),
+				WindSpeed:     parse(t.Wind.Speed.Value, 0),
+				WindDirection: parse(t.Wind.Direction.Value, 0),
+				Humidity:      parse(t.Humidity.Value, 70) / 100,
+				Pressure:      parse(t.Pressure.Value, 1000),
+			},
+		})
+	}
+	if len(points) == 0 {
+		return nil, fmt.Errorf("no forecast data")
+	}
+	return points, nil
+}
+
 func parse(s string, def float64) float64 {
 	if v, err := strconv.ParseFloat(s, 64); err == nil {
 		return v

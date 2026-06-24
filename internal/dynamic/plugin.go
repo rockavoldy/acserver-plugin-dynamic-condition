@@ -185,6 +185,50 @@ func (p *Plugin) updateRainAndGrip(dt time.Duration) {
 	p.rainCursor = (p.rainCursor + 1) % len(p.rainLag)
 }
 
+func (p *Plugin) syncWeatherByForecast() {
+	// 3-hour forecast slots mapped to real time based on how fast the game clock runs
+	slotReal := time.Duration(3 * 3600 / p.params.TimeMultiplier * float64(time.Second))
+	p.updatePeriod = slotReal
+
+	var cache []ForecastPoint
+	var cacheExpiry time.Time
+
+	for {
+		if cache == nil || time.Now().After(cacheExpiry) {
+			if entries, err := getOpenWeatherForecast(p.params.ApiKey, p.params.TrackLatitude, p.params.TrackLongitude); err == nil {
+				cache = entries
+				cacheExpiry = time.Now().Add(time.Hour)
+			} else {
+				fmt.Println("OpenWeather forecast warning:", err)
+			}
+		}
+		if cache != nil {
+			gameTime := p.currentDate().UTC()
+			best := cache[0]
+			bestDiff := absDuration(best.At.Sub(gameTime))
+			for _, e := range cache[1:] {
+				if d := absDuration(e.At.Sub(gameTime)); d < bestDiff {
+					best = e
+					bestDiff = d
+				}
+			}
+			p.applyWeather(best.WeatherDescription)
+		}
+		select {
+		case <-p.disposed:
+			return
+		case <-time.After(slotReal):
+		}
+	}
+}
+
+func absDuration(d time.Duration) time.Duration {
+	if d < 0 {
+		return -d
+	}
+	return d
+}
+
 func (p *Plugin) applyWeather(w WeatherDescription) {
 	if !p.params.RainEnable && rainIntensity(w.Type) > 0 {
 		w.Type = OvercastClouds
@@ -206,6 +250,10 @@ func (p *Plugin) applyWeather(w WeatherDescription) {
 
 func (p *Plugin) syncWeather() {
 	if p.params.UseRealConditions {
+		if p.params.TimeMultiplier > 2 {
+			p.syncWeatherByForecast()
+			return
+		}
 		p.updatePeriod = 10 * time.Minute
 		for {
 			select {

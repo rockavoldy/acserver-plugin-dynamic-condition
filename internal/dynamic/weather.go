@@ -156,6 +156,29 @@ func generateRandomType(current WeatherType, p config.LiveConditionParams) Weath
 	return Clear
 }
 
+func nightCoolingCoefficient(t WeatherType) float64 {
+	switch t {
+	case Clear, Sand, Dust, Hot:
+		return 1.0 // open sky radiates heat maximally
+	case FewClouds, Windy:
+		return 0.7
+	case Haze:
+		return 0.6
+	case ScatteredClouds:
+		return 0.5
+	case BrokenClouds, LightSnow, LightDrizzle, Drizzle:
+		return 0.3
+	case OvercastClouds, Mist, LightRain, Rain, Snow, Sleet, LightSleet, HeavyDrizzle:
+		return 0.2
+	case HeavyRain, HeavySnow, HeavySleet, Hail, LightThunderstorm, Thunderstorm, HeavyThunderstorm, Smoke, Squalls, Tornado, Hurricane:
+		return 0.1
+	case Fog:
+		return 0.0 // fog acts as a thermal blanket, no radiative cooling
+	default:
+		return 0.5
+	}
+}
+
 func inTable(table []chance, t WeatherType) bool {
 	for _, x := range table {
 		if x.t == t {
@@ -295,9 +318,9 @@ func roadTemperatureCoefficient(t WeatherType) float64 {
 	case OvercastClouds:
 		return 0.01
 	case Fog:
-		return -0.3
+		return 0
 	case Mist, Smoke:
-		return -0.2
+		return 0.1
 	case Haze:
 		return 0.9
 	case Windy:

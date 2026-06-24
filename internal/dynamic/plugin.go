@@ -91,6 +91,7 @@ func (p *Plugin) serializedCommand(cur, next WeatherDescription) string {
 		util.RoundToInt(float64(date.Hour()*3600+date.Minute()*60+date.Second())),
 		ambient,
 		util.Lerp(tr, roadTemperatureCoefficient(cur.Type), roadTemperatureCoefficient(next.Type)),
+		util.Lerp(tr, nightCoolingCoefficient(cur.Type), nightCoolingCoefficient(next.Type)),
 	)
 
 	wind := util.Lerp(tr, cur.WindSpeed, next.WindSpeed) * 3.6
@@ -164,6 +165,7 @@ func (p *Plugin) updateRainAndGrip(dt time.Duration) {
 			util.RoundToInt(float64(p.currentDate().Hour()*3600+p.currentDate().Minute()*60+p.currentDate().Second())),
 			ambient,
 			util.Lerp(tr, roadTemperatureCoefficient(p.weatherCurrent.Type), roadTemperatureCoefficient(p.weatherNext.Type)),
+			util.Lerp(tr, nightCoolingCoefficient(p.weatherCurrent.Type), nightCoolingCoefficient(p.weatherNext.Type)),
 		)
 	}
 	if p.rainIntensity > 0 {

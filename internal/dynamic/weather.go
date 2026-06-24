@@ -10,9 +10,30 @@ type chance struct {
 	t WeatherType
 }
 
-var regular = []chance{{0.4, Clear}, {0.2, FewClouds}, {0.1, ScatteredClouds}, {0.1, BrokenClouds}, {0.2, OvercastClouds}, {0.1, Fog}, {0.1, Mist}, {0.2, Windy}}
-var rain = []chance{{0.1, LightDrizzle}, {0.2, Drizzle}, {0.2, HeavyDrizzle}, {0.2, LightRain}, {0.3, Rain}, {0.1, HeavyRain}}
-var thunder = []chance{{0.6, LightThunderstorm}, {0.3, Thunderstorm}, {0.1, HeavyThunderstorm}}
+var regular = []chance{
+	{0.4, Clear},
+	{0.2, FewClouds},
+	{0.1, ScatteredClouds},
+	{0.1, BrokenClouds},
+	{0.2, OvercastClouds},
+	{0.1, Fog},
+	{0.1, Mist},
+	{0.2, Windy},
+}
+var rain = []chance{
+	{0.1, LightDrizzle},
+	{0.2, Drizzle},
+	{0.2, HeavyDrizzle},
+	{0.2, LightRain},
+	{0.3, Rain},
+	{0.1, HeavyRain},
+}
+var thunder = []chance{
+	{0.6, LightThunderstorm},
+	{0.3, Thunderstorm},
+	{0.1, HeavyThunderstorm},
+}
+
 var neighbours = map[WeatherType][]WeatherType{}
 
 func init() {
@@ -77,6 +98,7 @@ func init() {
 		neighbours[k] = append(neighbours[k], k)
 	}
 }
+
 func contains(a []WeatherType, t WeatherType) bool {
 	for _, x := range a {
 		if x == t {
@@ -85,6 +107,7 @@ func contains(a []WeatherType, t WeatherType) bool {
 	}
 	return false
 }
+
 func pick(table []chance, allowed []WeatherType) (WeatherType, bool) {
 	sum := 0.0
 	filtered := make([]chance, 0, len(table))
@@ -106,6 +129,7 @@ func pick(table []chance, allowed []WeatherType) (WeatherType, bool) {
 	}
 	return filtered[0].t, true
 }
+
 func generateRandomType(current WeatherType, p config.LiveConditionParams) WeatherType {
 	has := current != WeatherNone
 	if !p.WeatherTypeChangeToNeighboursOnly && has && util.Random() < 0.2 {
@@ -131,6 +155,7 @@ func generateRandomType(current WeatherType, p config.LiveConditionParams) Weath
 	}
 	return Clear
 }
+
 func inTable(table []chance, t WeatherType) bool {
 	for _, x := range table {
 		if x.t == t {
@@ -139,12 +164,14 @@ func inTable(table []chance, t WeatherType) bool {
 	}
 	return false
 }
+
 func max(a, b float64) float64 {
 	if a > b {
 		return a
 	}
 	return b
 }
+
 func estimate(t WeatherType) (float64, float64, float64) {
 	switch t {
 	case Clear:
@@ -185,11 +212,13 @@ func estimate(t WeatherType) (float64, float64, float64) {
 		return 24, 1, 0.6
 	}
 }
+
 func generateRandomDescription(current WeatherType, p config.LiveConditionParams) WeatherDescription {
 	t := generateRandomType(current, p)
 	temp, wind, hum := estimate(t)
 	return WeatherDescription{Type: t, Temperature: temp * util.RandomRange(0.95, 1.05), WindSpeed: wind * util.RandomRange(0.6, 1.2), WindDirection: util.Random() * 360, Humidity: hum * util.RandomRange(0.6, 1.2), Pressure: 1030}
 }
+
 func rainIntensity(t WeatherType) float64 {
 	switch t {
 	case LightThunderstorm:
@@ -222,6 +251,7 @@ func rainIntensity(t WeatherType) float64 {
 		return 0
 	}
 }
+
 func roadTemperatureCoefficient(t WeatherType) float64 {
 	switch t {
 	case LightThunderstorm:

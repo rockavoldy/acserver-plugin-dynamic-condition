@@ -190,6 +190,7 @@ func (p *Plugin) applyWeather(w WeatherDescription) {
 		w.Type = OvercastClouds
 	}
 	fmt.Printf("Applying weather: %s, Temp: %.1f°C, Wind: %.1f km/h at %.0f°, Humidity: %.0f%%, Pressure: %.0f hPa\n", w.Type.String(), w.Temperature, w.WindSpeed*3.6, w.WindDirection, w.Humidity*100, w.Pressure)
+
 	rain := rainIntensity(w.Type) * util.RandomRange(0.8, 1.2)
 	p.weatherTransitionStart = time.Now()
 	if p.weatherNext != nil {

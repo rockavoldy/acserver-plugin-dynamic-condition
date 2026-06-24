@@ -81,7 +81,7 @@ func (t WeatherType) String() string {
 	case HeavySleet:
 		return "Heavy Sleet"
 	case Clear:
-		return "CLear"
+		return "Clear"
 	case FewClouds:
 		return "Few Clouds"
 	case ScatteredClouds:
